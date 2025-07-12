@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { Message } from './llm/types';
 
-const CONVERSATIONS_DIR = path.join(os.homedir(), '.codeprompt', 'conversations');
+const CONVERSATIONS_DIR = path.join(os.homedir(), '.promptcoder', 'conversations');
 
 export interface SavedConversation {
   id: string;

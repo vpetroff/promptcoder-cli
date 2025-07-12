@@ -1,10 +1,10 @@
 {
-  "name": "codeprompt-cli",
+  "name": "promptcoder-cli",
   "version": "1.0.0",
   "description": "AI-powered code generation CLI tool with conversation persistence, file tools, and LLM integration",
   "main": "dist/index.js",
   "bin": {
-    "codeprompt": "dist/index.js"
+    "promptcoder": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -24,22 +24,22 @@
   },
   "preferGlobal": true,
   "dependencies": {
-    "commander": "^11.0.0",
-    "inquirer": "^9.2.0",
-    "chalk": "^5.3.0",
-    "openai": "^4.0.0",
     "@anthropic-ai/sdk": "^0.20.0",
+    "chalk": "^5.3.0",
+    "commander": "^11.0.0",
     "dotenv": "^16.3.0",
     "fs-extra": "^11.1.0",
-    "glob": "^10.3.0"
+    "glob": "^10.3.0",
+    "inquirer": "^9.2.0",
+    "openai": "^4.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/inquirer": "^9.0.0",
     "@types/fs-extra": "^11.0.0",
     "@types/glob": "^8.1.0",
-    "typescript": "^5.0.0",
-    "ts-node": "^10.9.0"
+    "@types/inquirer": "^9.0.0",
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
   },
   "keywords": [
     "cli",
@@ -58,16 +58,16 @@
     "diff-editor"
   ],
   "author": {
-    "name": "CodePrompt Team",
-    "email": "hello@codeprompt.dev"
+    "name": "Vladimir Petrov",
+    "email": "vlad@vasoftware.co.uk"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/codeprompt/codeprompt-cli.git"
+    "url": "https://github.com/vpetroff/prompt-coder.git"
   },
   "bugs": {
-    "url": "https://github.com/codeprompt/codeprompt-cli/issues"
+    "url": "https://github.com/vpetroff/prompt-coder/issues"
   },
-  "homepage": "https://github.com/codeprompt/codeprompt-cli#readme"
+  "homepage": "https://github.com/vpetroff/prompt-coder#readme"
 }

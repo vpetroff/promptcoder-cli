@@ -28,7 +28,7 @@ export class CodePromptApp {
   }
 
   async startInteractive(): Promise<void> {
-    console.log(chalk.blue.bold('🤖 CodePrompt Interactive Mode'));
+    console.log(chalk.blue.bold('🤖 PromptCoder Interactive Mode'));
     console.log(chalk.gray('Commands: exit, clear, save, load, list, rename, delete\n'));
 
     // Show current conversation info

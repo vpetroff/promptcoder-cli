@@ -1,10 +1,10 @@
-# CodePrompt CLI
+# PromptCoder CLI
 
 🤖 **AI-powered code generation CLI tool** with conversation persistence, advanced file tools, and support for multiple LLM providers (OpenAI GPT & Anthropic Claude).
 
-[![npm version](https://badge.fury.io/js/codeprompt-cli.svg)](https://badge.fury.io/js/codeprompt-cli)
+[![npm version](https://badge.fury.io/js/promptcoder-cli.svg)](https://badge.fury.io/js/promptcoder-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/node/v/codeprompt-cli.svg)](https://nodejs.org/en/)
+[![Node.js Version](https://img.shields.io/node/v/promptcoder-cli.svg)](https://nodejs.org/en/)
 
 ## ✨ Features
 
@@ -20,19 +20,19 @@
 
 ### Global Installation (Recommended)
 ```bash
-npm install -g codeprompt-cli
+npm install -g promptcoder-cli
 ```
 
 ### Local Installation
 ```bash
-npm install codeprompt-cli
+npm install promptcoder-cli
 ```
 
 ## ⚙️ Configuration
 
 ### First Run Setup
 ```bash
-codeprompt config
+promptcoder config
 ```
 
 ### Environment Variables
@@ -47,22 +47,22 @@ export ANTHROPIC_MODEL="claude-3-5-sonnet-20241022"  # optional
 ```
 
 ### Manual Configuration
-Configuration is stored in `~/.codeprompt/config.json`
+Configuration is stored in `~/.promptcoder/config.json`
 
 ## 🎯 Usage
 
 ### Interactive Mode
 ```bash
-codeprompt interactive
+promptcoder interactive
 # or
-codeprompt i
+promptcoder i
 ```
 
 ### Single Prompt
 ```bash
-codeprompt prompt "Create a React component for a todo list"
+promptcoder prompt "Create a React component for a todo list"
 # or
-codeprompt p "Add error handling to my express server" --directory ./my-project
+promptcoder p "Add error handling to my express server" --directory ./my-project
 ```
 
 ### Conversation Management
@@ -106,7 +106,7 @@ The AI has access to these powerful tools:
 
 ### Creating a React App
 ```bash
-codeprompt i
+promptcoder i
 Prompt: Create a modern React TypeScript app with routing and state management
 
 # The AI will:
@@ -120,7 +120,7 @@ Prompt: Create a modern React TypeScript app with routing and state management
 
 ### Refactoring Code
 ```bash
-codeprompt i
+promptcoder i
 Prompt: Refactor this codebase to use TypeScript and add proper error handling
 
 # The AI will:
@@ -135,7 +135,7 @@ Prompt: Refactor this codebase to use TypeScript and add proper error handling
 ### Conversation Persistence
 ```bash
 # Start working on a project
-codeprompt i
+promptcoder i
 Prompt: Build a REST API with Express and PostgreSQL
 # ... work continues ...
 save
@@ -143,7 +143,7 @@ Name: "E-commerce API"
 Description: "Building product catalog and user auth"
 
 # Later, resume exactly where you left off
-codeprompt i
+promptcoder i
 load
 # Select: "E-commerce API (15 messages, 12/5/2024)"
 # Continue with full context preserved
@@ -152,7 +152,7 @@ load
 ## 🔄 Conversation Flow
 
 ```
-🤖 CodePrompt Interactive Mode
+🤖 PromptCoder Interactive Mode
 Commands: exit, clear, save, load, list, rename, delete
 
 [My React Project] Prompt: Add authentication to the app
@@ -198,8 +198,8 @@ Now I'll create the authentication system. I'll add:
 
 ```bash
 # Clone and install
-git clone https://github.com/codeprompt/codeprompt-cli.git
-cd codeprompt-cli
+git clone https://github.com/promptcoder/promptcoder-cli.git
+cd promptcoder-cli
 npm install
 
 # Development mode
@@ -214,8 +214,8 @@ npm run build && npm link
 
 ## 🔒 Privacy & Security
 
-- **API Keys**: Stored locally in `~/.codeprompt/config.json`
-- **Conversations**: Stored locally in `~/.codeprompt/conversations/`
+- **API Keys**: Stored locally in `~/.promptcoder/config.json`
+- **Conversations**: Stored locally in `~/.promptcoder/conversations/`
 - **No Data Sharing**: All data remains on your machine
 - **Secure**: Uses official OpenAI and Anthropic SDKs
 
@@ -227,7 +227,7 @@ npm run build && npm link
 
 ## 📄 License
 
-MIT © CodePrompt Team
+MIT © PromptCoder Team
 
 ## 🤝 Contributing
 
@@ -235,8 +235,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/codeprompt/codeprompt-cli/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/codeprompt/codeprompt-cli/discussions)
+- **Issues**: [GitHub Issues](https://github.com/promptcoder/promptcoder-cli/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/promptcoder/promptcoder-cli/discussions)
 
 ---
 

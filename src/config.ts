@@ -8,7 +8,7 @@ import { AppConfig } from './app';
 
 dotenvConfig();
 
-const CONFIG_DIR = path.join(os.homedir(), '.codeprompt');
+const CONFIG_DIR = path.join(os.homedir(), '.promptcoder');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
 export interface StoredConfig {

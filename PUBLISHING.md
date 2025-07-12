@@ -12,7 +12,7 @@
 # Build and test locally
 npm run build
 npm link
-codeprompt --help
+promptcoder --help
 
 # Test the package structure
 npm pack --dry-run
@@ -45,11 +45,11 @@ npm publish --access public
 ### 4. Verify Publication
 ```bash
 # Check on npm website
-# https://www.npmjs.com/package/codeprompt-cli
+# https://www.npmjs.com/package/promptcoder-cli
 
 # Test installation
-npm install -g codeprompt-cli
-codeprompt --help
+npm install -g promptcoder-cli
+promptcoder --help
 ```
 
 ## Post-Publishing Checklist

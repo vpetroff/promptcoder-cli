@@ -7,7 +7,9 @@
       "Bash(node:*)",
       "Bash(npm pack:*)",
       "Bash(npm link:*)",
-      "Bash(codeprompt --help)"
+      "Bash(codeprompt --help)",
+      "Bash(npm unlink:*)",
+      "Bash(promptcoder --help:*)"
     ],
     "deny": []
   }

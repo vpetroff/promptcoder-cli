@@ -7,7 +7,7 @@ import { loadConfig } from './config';
 const program = new Command();
 
 program
-  .name('codeprompt')
+  .name('promptcoder')
   .description('Generate application code using LLM prompting')
   .version('1.0.0');
 
