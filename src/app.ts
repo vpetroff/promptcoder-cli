@@ -1,5 +1,7 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
+import * as readline from 'readline';
+import death from 'death';
 import { createLLMClient, LLMClient, LLMConfig, Message } from './llm';
 import { FileTools } from './tools/file-tools';
 import { AdvancedTools } from './tools/advanced-tools';
@@ -25,8 +27,6 @@ export class CodePromptApp {
   private conversationManager: ConversationManager;
   private currentConversationId: string | null = null;
   private currentConversationName: string | null = null;
-  private ctrlCCount = 0;
-  private ctrlCTimer: NodeJS.Timeout | null = null;
   private activeFileWatchers: Map<string, any> = new Map();
 
   constructor(config: AppConfig) {
@@ -37,6 +37,9 @@ export class CodePromptApp {
     this.sandboxTools = new SandboxTools(config.workingDirectory);
     this.conversationManager = new ConversationManager();
     this.initializeSandboxTools();
+    
+    // Set up graceful exit handler early
+    this.setupGracefulExit();
   }
 
   private initializeSandboxTools(): void {
@@ -47,73 +50,68 @@ export class CodePromptApp {
     }
   }
 
-  private setupDoubleCtrlCHandler(): void {
-    // Remove any existing listeners to avoid duplicates
-    process.removeAllListeners('SIGINT');
-
-    process.on('SIGINT', async () => {
-      this.ctrlCCount++;
-
-      if (this.ctrlCCount === 1) {
-        console.log(chalk.yellow('\n⚠️  Press Ctrl+C again within 3 seconds to exit'));
-        
-        // Reset counter after 3 seconds
-        this.ctrlCTimer = setTimeout(() => {
-          this.ctrlCCount = 0;
-          console.log(chalk.gray('Exit cancelled. Continue working...'));
-        }, 3000);
-      } else if (this.ctrlCCount >= 2) {
-        // Clear the timer if it exists
-        if (this.ctrlCTimer) {
-          clearTimeout(this.ctrlCTimer);
-        }
-        
-        console.log(chalk.blue('\n👋 Exiting PromptCoder...'));
-        
+  private async autoSaveOnExit(): Promise<void> {
+      try {
         // Stop any active file watchers
         await this.stopAllFileWatchers();
         
-        // Check if we should save the conversation before exiting
+        // Auto-save conversations
         if (this.conversationHistory.length > 0 && !this.currentConversationId) {
-          try {
-            const inquirer = await import('inquirer');
-            const { shouldSave } = await inquirer.default.prompt([
-              {
-                type: 'confirm',
-                name: 'shouldSave',
-                message: 'Save current conversation before exiting?',
-                default: true
-              }
-            ]);
-
-            if (shouldSave) {
-              await this.handleSave();
-            }
-          } catch (error) {
-            // If there's an error with the prompt, just exit
-            console.log(chalk.yellow('Unable to prompt for save. Exiting...'));
-          }
+          console.log(chalk.blue('Auto-saving conversation before exit...'));
+          const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+          const conversationName = `Conversation ${timestamp}`;
+          await this.conversationManager.saveConversation(
+            this.conversationHistory,
+            this.config.workingDirectory || process.cwd(),
+            conversationName,
+            'Auto-saved during exit'
+          );
+          console.log(chalk.green(`✅ Conversation saved as "${conversationName}"`));
         } else if (this.currentConversationId && this.conversationHistory.length > 0) {
-          // Auto-save existing conversation
-          try {
-            await this.autoSave();
-            console.log(chalk.green('✅ Conversation auto-saved'));
-          } catch (error) {
-            console.log(chalk.yellow('⚠️  Failed to auto-save conversation'));
-          }
+          await this.autoSave();
+          console.log(chalk.green('✅ Conversation auto-saved'));
         }
-        
-        console.log(chalk.green('🎉 Thanks for using PromptCoder!'));
-        process.exit(0);
+      } catch (error) {
+        console.log(chalk.yellow('Failed to save conversation. Exiting...'));
       }
+      
+      console.log(chalk.green('🎉 Thanks for using PromptCoder!'));
+      process.exit(0);
+  }    
+
+  private setupGracefulExit(): void {
+    death(async (signal: string) => {
+      return this.autoSaveOnExit();
+    });
+  }
+
+  private async promptUser(message: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: true
+      });
+
+      rl.question(message, (answer) => {
+        rl.close();
+        resolve(answer);
+      });
+
+      // Handle SIGINT properly - let death handle it
+      rl.on('SIGINT', async () => {
+        console.log(chalk.blue('\n👋 Exiting...'));
+        rl.close();
+        await this.autoSaveOnExit();
+      });
     });
   }
 
   async startInteractive(): Promise<void> {
     console.log(chalk.blue.bold('🤖 PromptCoder Interactive Mode'));
-    console.log(chalk.gray('Commands: exit, clear, save, load, list, rename, delete'));
-    console.log(chalk.gray('CLI Commands: /deploy, /sandbox, /watch (use /help for full list)'));
-    console.log(chalk.gray('Press Ctrl+C twice to exit\n'));
+    console.log(chalk.gray('Commands: /exit, /clear, /save, /load, /list, /rename, /delete'));
+    console.log(chalk.gray('CLI Commands: /deploy, /sandbox, /watch, /stop (use /help for full list)'));
+    console.log(chalk.gray('Press Ctrl+C to exit\n'));
 
     // Show current conversation info
     if (this.currentConversationName) {
@@ -121,72 +119,47 @@ export class CodePromptApp {
       console.log(chalk.gray(`Messages: ${this.conversationHistory.length}\n`));
     }
 
-    // Set up double Ctrl+C handler
-    this.setupDoubleCtrlCHandler();
-
     while (true) {
-      const { prompt } = await inquirer.prompt([
-        {
-          type: 'input',
-          name: 'prompt',
-          message: chalk.cyan(this.currentConversationName ? `[${this.currentConversationName}] Prompt:` : 'Prompt:'),
-          validate: (input: string) => input.trim().length > 0 || 'Please enter a prompt'
+      try {
+        const promptMessage = chalk.cyan(this.currentConversationName ? `[${this.currentConversationName}] Prompt: ` : 'Prompt: ');
+        const prompt = await this.promptUser(promptMessage);
+        
+        const trimmedPrompt = prompt.trim();
+        
+        if (trimmedPrompt.length === 0) {
+          console.log(chalk.yellow('Please enter a prompt\n'));
+          continue;
         }
-      ]);
 
-      const trimmedPrompt = prompt.trim();
+        // Handle all commands prefixed with /
+        if (trimmedPrompt.startsWith('/')) {
+          await this.handleAllCommands(trimmedPrompt);
+          continue;
+        }
 
-      // Handle CLI commands prefixed with /
-      if (trimmedPrompt.startsWith('/')) {
-        await this.handleCliCommand(trimmedPrompt);
-        continue;
-      }
+        // Check if user might have intended to use a command without /
+        const possibleCommands = ['help', 'exit', 'clear', 'save', 'load', 'list', 'rename', 'delete', 'config', 'deploy', 'sandbox', 'watch', 'stop'];
+        const lowerPrompt = trimmedPrompt.toLowerCase();
+        
+        if (possibleCommands.includes(lowerPrompt) || possibleCommands.some(cmd => lowerPrompt.startsWith(cmd + ' '))) {
+          console.log(chalk.yellow(`💡 Did you mean to use /${lowerPrompt}? All commands require a / prefix.`));
+          console.log(chalk.gray('Use /help to see all available commands\n'));
+          continue;
+        }
 
-      const command = trimmedPrompt.toLowerCase();
-
-      if (command === 'exit') {
-        await this.handleExit();
+        // If it doesn't start with /, treat it as a prompt for the AI
+        await this.executeInteractivePrompt(trimmedPrompt);
+        
+        // Auto-save after each interaction if we have a current conversation
+        if (this.currentConversationId && this.conversationHistory.length > 0) {
+          await this.autoSave();
+        }
+        
+        console.log(); // Empty line for spacing
+      } catch (error) {
+        // Handle any errors gracefully
         break;
       }
-
-      if (command === 'clear') {
-        await this.handleClear();
-        continue;
-      }
-
-      if (command === 'save') {
-        await this.handleSave();
-        continue;
-      }
-
-      if (command === 'load') {
-        await this.handleLoad();
-        continue;
-      }
-
-      if (command === 'list') {
-        await this.handleList();
-        continue;
-      }
-
-      if (command === 'rename') {
-        await this.handleRename();
-        continue;
-      }
-
-      if (command === 'delete') {
-        await this.handleDelete();
-        continue;
-      }
-
-      await this.executeInteractivePrompt(prompt);
-      
-      // Auto-save after each interaction if we have a current conversation
-      if (this.currentConversationId && this.conversationHistory.length > 0) {
-        await this.autoSave();
-      }
-      
-      console.log(); // Empty line for spacing
     }
   }
 
@@ -369,15 +342,46 @@ export class CodePromptApp {
     console.log(chalk.blue(`📁 Working directory set to: ${directory}`));
   }
 
-  private async handleCliCommand(command: string): Promise<void> {
+  private async handleAllCommands(command: string): Promise<void> {
     try {
       const args = command.slice(1).split(/\s+/); // Remove leading '/' and split by whitespace
       const cmd = args[0].toLowerCase();
       const params = args.slice(1);
 
       switch (cmd) {
+        // Conversation management commands
+        case 'exit':
+          await this.handleExit();
+          process.exit(0);
+          break;
+
+        case 'clear':
+          await this.handleClear();
+          break;
+
+        case 'save':
+          await this.handleSave();
+          break;
+
+        case 'load':
+          await this.handleLoad();
+          break;
+
+        case 'list':
+          await this.handleList();
+          break;
+
+        case 'rename':
+          await this.handleRename();
+          break;
+
+        case 'delete':
+          await this.handleDelete();
+          break;
+
+        // CLI commands
         case 'help':
-          await this.showCliHelp();
+          await this.showAllHelp();
           break;
 
         case 'deploy':
@@ -411,10 +415,22 @@ export class CodePromptApp {
     }
   }
 
-  private async showCliHelp(): Promise<void> {
-    console.log(chalk.blue.bold('\n📖 Available CLI Commands:'));
+  private async showAllHelp(): Promise<void> {
+    console.log(chalk.blue.bold('\n📖 Available Commands:'));
     console.log();
+    
+    console.log(chalk.blue.bold('Conversation Management:'));
     console.log(chalk.cyan('/help') + chalk.gray(' - Show this help message'));
+    console.log(chalk.cyan('/exit') + chalk.gray(' - Exit PromptCoder'));
+    console.log(chalk.cyan('/clear') + chalk.gray(' - Clear current conversation'));
+    console.log(chalk.cyan('/save') + chalk.gray(' - Save current conversation'));
+    console.log(chalk.cyan('/load') + chalk.gray(' - Load a saved conversation'));
+    console.log(chalk.cyan('/list') + chalk.gray(' - List all saved conversations'));
+    console.log(chalk.cyan('/rename') + chalk.gray(' - Rename current conversation'));
+    console.log(chalk.cyan('/delete') + chalk.gray(' - Delete a saved conversation'));
+    console.log();
+    
+    console.log(chalk.blue.bold('Development & Deployment:'));
     console.log(chalk.cyan('/config') + chalk.gray(' - Configure API keys and settings'));
     console.log(chalk.cyan('/deploy [options]') + chalk.gray(' - Deploy current project to sandbox'));
     console.log(chalk.gray('  Options: --template <name>, --name <name>, --no-open'));
@@ -424,7 +440,9 @@ export class CodePromptApp {
     console.log(chalk.gray('  Options: --watch <patterns>, --ignore <patterns>'));
     console.log(chalk.cyan('/stop [sandbox-id]') + chalk.gray(' - Stop file watching (all or specific)'));
     console.log();
+    
     console.log(chalk.blue('Examples:'));
+    console.log(chalk.gray('/save'));
     console.log(chalk.gray('/deploy --template react-ts --name "My App"'));
     console.log(chalk.gray('/sandbox list'));
     console.log(chalk.gray('/watch abc123 --watch src/**/*.ts'));

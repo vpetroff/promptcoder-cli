@@ -10,7 +10,9 @@
       "Bash(codeprompt --help)",
       "Bash(npm unlink:*)",
       "Bash(promptcoder --help:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(npm view:*)",
+      "Bash(npm install:*)"
     ],
     "deny": []
   }

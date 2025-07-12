@@ -14,7 +14,7 @@
 - 🤖 **Multiple LLM Providers**: OpenAI (GPT-4) and Anthropic (Claude) support
 - 🚀 **Sandbox Deployment**: Deploy code to cloud environments (E2B) with auto-detection
 - 🔄 **File Watching**: Real-time sync of file changes to deployed sandboxes
-- 🛡️ **Exit Protection**: Double Ctrl+C required to prevent accidental exits
+- 🛡️ **Graceful Exit**: Auto-saves conversations on Ctrl+C exit
 - 🚀 **Retry Logic**: Automatic retry with exponential backoff for API rate limits
 - 🎨 **Beautiful Interface**: Colorized output with progress indicators
 - 📁 **Project-Aware**: Maintains working directory context per conversation
@@ -104,21 +104,21 @@ promptcoder watch <sandbox-id> --watch "src/**/*.ts" "*.json"
 promptcoder watch <sandbox-id> --ignore "node_modules/**" "dist/**"
 ```
 
-### Conversation Management
+### Interactive Mode Commands
 ```bash
-# In interactive mode:
-save          # Save current conversation
-load          # Load a previous conversation
-list          # List all saved conversations
-rename        # Rename current conversation
-delete        # Delete a conversation
-clear         # Clear current conversation
-```
+# All commands in interactive mode require / prefix:
 
-### CLI Commands in Interactive Mode
-```bash
-# All CLI commands can be run in interactive mode with / prefix:
-/help                              # Show available CLI commands
+# Conversation Management
+/help                              # Show all available commands
+/exit                             # Exit PromptCoder
+/save                             # Save current conversation
+/load                             # Load a previous conversation
+/list                             # List all saved conversations
+/rename                           # Rename current conversation
+/delete                           # Delete a conversation
+/clear                            # Clear current conversation
+
+# Development & Deployment
 /config                           # Configure API keys and settings
 /deploy --template react-ts       # Deploy current project
 /sandbox list                     # List active sandboxes
@@ -127,8 +127,7 @@ clear         # Clear current conversation
 /watch <sandbox-id>               # Start file watching
 /stop [sandbox-id]                # Stop file watching (all or specific)
 
-# Exit Protection: Press Ctrl+C twice within 3 seconds to exit
-# Single Ctrl+C is ignored to prevent accidental exits
+# Graceful Exit: Press Ctrl+C to exit with auto-save
 ```
 
 ## 🔧 Available Tools
@@ -214,29 +213,31 @@ load
 # Continue with full context preserved
 ```
 
-### CLI Commands in Interactive Mode
+### Interactive Mode Workflow
 ```bash
-# Deploy and test your project without leaving the conversation
+# Seamless development workflow with commands and AI assistance
 promptcoder i
 Prompt: Create a React TypeScript app with routing
 # ... AI creates the app ...
-/deploy --template react-ts --name "My App"  # Deploy to sandbox
+/save                                        # Save this conversation
+/deploy --template react-ts --name "My App" # Deploy to sandbox
 # ✅ Deployment successful! Sandbox ID: abc123...
-/watch abc123                                # Start file watching
+/watch abc123                               # Start file watching
 # 🔄 File watcher started successfully
 Prompt: Add a dark mode toggle to the navbar
 # ... AI makes changes ...
 # ✅ Synced 3 file(s) to sandbox (automatically)
-/sandbox list                                # Check all deployments
+/sandbox list                               # Check all deployments
+/stop abc123                                # Stop file watching when done
 ```
 
 ## 🔄 Conversation Flow
 
 ```
 🤖 PromptCoder Interactive Mode
-Commands: exit, clear, save, load, list, rename, delete
-CLI Commands: /deploy, /sandbox, /watch (use /help for full list)
-Press Ctrl+C twice to exit
+Commands: /exit, /clear, /save, /load, /list, /rename, /delete
+CLI Commands: /deploy, /sandbox, /watch, /stop (use /help for full list)
+Press Ctrl+C to exit
 
 [My React Project] Prompt: Add authentication to the app
 
