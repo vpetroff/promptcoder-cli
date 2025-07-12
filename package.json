@@ -1,7 +1,7 @@
 {
-  "name": "codeprompt",
+  "name": "codeprompt-cli",
   "version": "1.0.0",
-  "description": "Console app for generating code using LLM prompting",
+  "description": "AI-powered code generation CLI tool with conversation persistence, file tools, and LLM integration",
   "main": "dist/index.js",
   "bin": {
     "codeprompt": "dist/index.js"
@@ -10,8 +10,19 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "preferGlobal": true,
   "dependencies": {
     "commander": "^11.0.0",
     "inquirer": "^9.2.0",
@@ -30,7 +41,33 @@
     "typescript": "^5.0.0",
     "ts-node": "^10.9.0"
   },
-  "keywords": ["cli", "llm", "code-generation", "ai"],
-  "author": "CodePrompt",
-  "license": "MIT"
+  "keywords": [
+    "cli",
+    "llm",
+    "ai",
+    "code-generation",
+    "openai",
+    "anthropic",
+    "claude",
+    "gpt",
+    "coding-assistant",
+    "developer-tools",
+    "automation",
+    "conversation",
+    "file-tools",
+    "diff-editor"
+  ],
+  "author": {
+    "name": "CodePrompt Team",
+    "email": "hello@codeprompt.dev"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codeprompt/codeprompt-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/codeprompt/codeprompt-cli/issues"
+  },
+  "homepage": "https://github.com/codeprompt/codeprompt-cli#readme"
 }

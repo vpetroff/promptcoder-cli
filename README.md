@@ -1,108 +1,243 @@
-# CodePrompt
+# CodePrompt CLI
 
-A console application that uses LLM prompting to generate application code, similar to Claude Code. The app accepts prompts and commands and uses external LLMs (OpenAI or Anthropic) to write code with file system tools.
+🤖 **AI-powered code generation CLI tool** with conversation persistence, advanced file tools, and support for multiple LLM providers (OpenAI GPT & Anthropic Claude).
 
-## Features
+[![npm version](https://badge.fury.io/js/codeprompt-cli.svg)](https://badge.fury.io/js/codeprompt-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/node/v/codeprompt-cli.svg)](https://nodejs.org/en/)
 
-- **Interactive Mode**: Chat-like interface for iterative code generation
-- **Single Prompt Mode**: Execute one-off prompts
-- **Multiple LLM Providers**: Support for OpenAI (GPT-4) and Anthropic (Claude)
-- **File System Tools**: Read, write, create, and manage files and directories
-- **Configuration Management**: Save API keys and preferences
-- **Colorized Output**: Beautiful console interface with syntax highlighting
+## ✨ Features
 
-## Installation
+- 🎯 **Interactive Mode**: Chat-like interface for iterative code generation
+- 📝 **Conversation Persistence**: Save and resume conversations across sessions
+- 🔧 **Advanced File Tools**: Diff edits, search, checkpoints, and smart directory filtering
+- 🤖 **Multiple LLM Providers**: OpenAI (GPT-4) and Anthropic (Claude) support
+- 🚀 **Retry Logic**: Automatic retry with exponential backoff for API rate limits
+- 🎨 **Beautiful Interface**: Colorized output with progress indicators
+- 📁 **Project-Aware**: Maintains working directory context per conversation
 
+## 🚀 Installation
+
+### Global Installation (Recommended)
 ```bash
-npm install
-npm run build
+npm install -g codeprompt-cli
 ```
 
-## Configuration
-
-### Option 1: Environment Variables
+### Local Installation
 ```bash
-cp .env.example .env
-# Edit .env with your API keys
+npm install codeprompt-cli
 ```
 
-### Option 2: Interactive Setup
+## ⚙️ Configuration
+
+### First Run Setup
 ```bash
-npm run dev config
+codeprompt config
 ```
 
-### Option 3: Command Line Setup
-The app will prompt you for configuration on first run if no config is found.
+### Environment Variables
+```bash
+# OpenAI
+export OPENAI_API_KEY="your-openai-api-key"
+export OPENAI_MODEL="gpt-4o"  # optional
 
-## Usage
+# Anthropic
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+export ANTHROPIC_MODEL="claude-3-5-sonnet-20241022"  # optional
+```
+
+### Manual Configuration
+Configuration is stored in `~/.codeprompt/config.json`
+
+## 🎯 Usage
 
 ### Interactive Mode
 ```bash
-npm run dev interactive
+codeprompt interactive
 # or
-npm run dev i
+codeprompt i
 ```
 
 ### Single Prompt
 ```bash
-npm run dev prompt "Create a React component for a todo list"
+codeprompt prompt "Create a React component for a todo list"
 # or
-npm run dev p "Add error handling to my express server" --directory ./my-project
+codeprompt p "Add error handling to my express server" --directory ./my-project
 ```
 
-### Configuration
+### Conversation Management
 ```bash
-npm run dev config
+# In interactive mode:
+save          # Save current conversation
+load          # Load a previous conversation
+list          # List all saved conversations
+rename        # Rename current conversation
+delete        # Delete a conversation
+clear         # Clear current conversation
 ```
 
-## Available Tools
+## 🔧 Available Tools
 
-The LLM has access to these file system tools:
+The AI has access to these powerful tools:
 
-- `read_file` - Read contents of a file
-- `write_file` - Write content to a file (creates directories if needed)
-- `read_directory` - List files and directories (with recursive option)
+### **Basic File Operations**
+- `read_file` - Read file contents
+- `write_file` - Write content to files (creates directories automatically)
+- `read_directory` - Smart directory listing (filters node_modules, .git, etc.)
 - `create_directory` - Create directories
 - `delete_file` - Delete files
-- `file_exists` - Check if file/directory exists
+- `file_exists` - Check if files/directories exist
 
-## Examples
+### **Advanced Editing**
+- `edit_file_diff` - Precise edits using exact text matching
+- `insert_lines` - Insert content at specific line numbers
+- `delete_lines` - Remove specific line ranges
 
-### Interactive Session
+### **Search & Discovery**
+- `search_in_files` - Search patterns across multiple files with regex support
+
+### **Version Control**
+- `create_checkpoint` - Save snapshots of file states
+- `list_checkpoints` - View all checkpoints with metadata
+- `restore_checkpoint` - Rollback to previous states
+- `show_file_diff` - Compare current files with checkpoint versions
+
+## 📚 Examples
+
+### Creating a React App
+```bash
+codeprompt i
+Prompt: Create a modern React TypeScript app with routing and state management
+
+# The AI will:
+# 1. Read your directory structure
+# 2. Create package.json with dependencies
+# 3. Set up TypeScript configuration
+# 4. Create components and routing
+# 5. Set up state management
+# 6. Add proper file structure
+```
+
+### Refactoring Code
+```bash
+codeprompt i
+Prompt: Refactor this codebase to use TypeScript and add proper error handling
+
+# The AI will:
+# 1. Create a checkpoint of current state
+# 2. Search through existing files
+# 3. Convert JavaScript to TypeScript
+# 4. Add error handling patterns
+# 5. Update configurations
+# 6. Show diffs of changes made
+```
+
+### Conversation Persistence
+```bash
+# Start working on a project
+codeprompt i
+Prompt: Build a REST API with Express and PostgreSQL
+# ... work continues ...
+save
+Name: "E-commerce API"
+Description: "Building product catalog and user auth"
+
+# Later, resume exactly where you left off
+codeprompt i
+load
+# Select: "E-commerce API (15 messages, 12/5/2024)"
+# Continue with full context preserved
+```
+
+## 🔄 Conversation Flow
+
 ```
 🤖 CodePrompt Interactive Mode
-Type your prompts to generate code. Type "exit" to quit.
+Commands: exit, clear, save, load, list, rename, delete
 
-Prompt: Create a simple Express.js server with CORS enabled
+[My React Project] Prompt: Add authentication to the app
+
+🔄 Processing (1/25)...
 
 💬 Response:
-I'll create a simple Express.js server with CORS enabled for you.
+I'll help you add authentication to your React app. Let me first examine your current project structure.
 
-🔧 Executing 3 tool call(s):
-  → write_file({"file_path":"package.json","content":"{\n  \"name\": \"express-server\",\n  \"version\": \"1.0.0\",\n  \"main\": \"server.js\",\n  \"scripts\": {\n    \"start\": \"node server.js\",\n    \"dev\": \"nodemon server.js\"\n  },\n  \"dependencies\": {\n    \"express\": \"^4.18.0\",\n    \"cors\": \"^2.8.5\"\n  },\n  \"devDependencies\": {\n    \"nodemon\": \"^3.0.0\"\n  }\n}"})
-    Successfully wrote 284 characters to package.json
-  → write_file({"file_path":"server.js","content":"const express = require('express');\nconst cors = require('cors');\n\nconst app = express();\nconst PORT = process.env.PORT || 3000;\n\n// Middleware\napp.use(cors());\napp.use(express.json());\n\n// Routes\napp.get('/', (req, res) => {\n  res.json({ message: 'Hello World! Server is running.' });\n});\n\napp.get('/api/health', (req, res) => {\n  res.json({ status: 'OK', timestamp: new Date().toISOString() });\n});\n\n// Start server\napp.listen(PORT, () => {\n  console.log(`Server is running on port ${PORT}`);\n});"})
-    Successfully wrote 486 characters to server.js
+🔧 Executing 2 tool call(s):
+  → read_directory({"dir_path":"."})
+    Contents of . (8 items):
+    FILE: package.json (2KB)
+    DIR: src
+    FILE: tsconfig.json (421B)
+    ...
 
-✅ Prompt execution completed
+  → read_file({"file_path":"src/App.tsx"})
+    File contents of src/App.tsx:
+    ...
+
+🔄 Continuing conversation after tool execution...
+
+💬 Response:
+Now I'll create the authentication system. I'll add:
+1. Auth context and provider
+2. Login/signup components
+3. Protected routes
+4. JWT token management
+
+🔧 Executing 4 tool call(s):
+  → create_checkpoint({"checkpoint_name":"before_auth","description":"Before adding authentication"})
+    Created checkpoint "before_auth" with 12 files
+
+  → write_file({"file_path":"src/contexts/AuthContext.tsx","content":"..."})
+    Successfully wrote 1240 characters to src/contexts/AuthContext.tsx
+  ...
+
+✅ Turn completed
 ```
 
-## Development
+## 🛠️ Development
 
 ```bash
-# Install dependencies
+# Clone and install
+git clone https://github.com/codeprompt/codeprompt-cli.git
+cd codeprompt-cli
 npm install
 
-# Run in development mode
+# Development mode
 npm run dev
 
-# Build for production
+# Build
 npm run build
 
-# Run built version
-npm start
+# Test global installation
+npm run build && npm link
 ```
 
-## License
+## 🔒 Privacy & Security
 
-MIT
+- **API Keys**: Stored locally in `~/.codeprompt/config.json`
+- **Conversations**: Stored locally in `~/.codeprompt/conversations/`
+- **No Data Sharing**: All data remains on your machine
+- **Secure**: Uses official OpenAI and Anthropic SDKs
+
+## 🚨 Requirements
+
+- **Node.js**: 16.0.0 or higher
+- **API Key**: OpenAI or Anthropic API key
+- **Operating System**: macOS, Linux, or Windows
+
+## 📄 License
+
+MIT © CodePrompt Team
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/codeprompt/codeprompt-cli/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/codeprompt/codeprompt-cli/discussions)
+
+---
+
+**Made with ❤️ for developers who want to code faster with AI assistance.**

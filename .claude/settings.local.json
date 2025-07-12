@@ -4,7 +4,10 @@
       "Bash(mkdir:*)",
       "Bash(npm install)",
       "Bash(npm run build:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm pack:*)",
+      "Bash(npm link:*)",
+      "Bash(codeprompt --help)"
     ],
     "deny": []
   }
