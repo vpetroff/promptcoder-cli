@@ -12,6 +12,8 @@
 - 📝 **Conversation Persistence**: Save and resume conversations across sessions
 - 🔧 **Advanced File Tools**: Diff edits, search, checkpoints, and smart directory filtering
 - 🤖 **Multiple LLM Providers**: OpenAI (GPT-4) and Anthropic (Claude) support
+- 🚀 **Sandbox Deployment**: Deploy code to cloud environments (E2B) with auto-detection
+- 🔄 **File Watching**: Real-time sync of file changes to deployed sandboxes
 - 🚀 **Retry Logic**: Automatic retry with exponential backoff for API rate limits
 - 🎨 **Beautiful Interface**: Colorized output with progress indicators
 - 📁 **Project-Aware**: Maintains working directory context per conversation
@@ -44,6 +46,9 @@ export OPENAI_MODEL="gpt-4o"  # optional
 # Anthropic
 export ANTHROPIC_API_KEY="your-anthropic-api-key"
 export ANTHROPIC_MODEL="claude-3-5-sonnet-20241022"  # optional
+
+# E2B Sandbox (optional)
+export E2B_API_KEY="your-e2b-api-key"
 ```
 
 ### Manual Configuration
@@ -63,6 +68,39 @@ promptcoder i
 promptcoder prompt "Create a React component for a todo list"
 # or
 promptcoder p "Add error handling to my express server" --directory ./my-project
+```
+
+### Sandbox Deployment
+```bash
+# Deploy current project to a sandbox
+promptcoder deploy
+
+# Deploy with custom template and name
+promptcoder deploy --template react-ts --name "My React App"
+
+# Deploy without opening browser
+promptcoder deploy --no-open
+
+# List active sandboxes
+promptcoder sandbox list
+
+# Get sandbox status
+promptcoder sandbox status <sandbox-id>
+
+# Delete a sandbox
+promptcoder sandbox delete <sandbox-id>
+```
+
+### File Watching
+```bash
+# Watch for changes and sync to sandbox
+promptcoder watch <sandbox-id>
+
+# Watch specific patterns
+promptcoder watch <sandbox-id> --watch "src/**/*.ts" "*.json"
+
+# Ignore specific patterns
+promptcoder watch <sandbox-id> --ignore "node_modules/**" "dist/**"
 ```
 
 ### Conversation Management
@@ -101,6 +139,16 @@ The AI has access to these powerful tools:
 - `list_checkpoints` - View all checkpoints with metadata
 - `restore_checkpoint` - Rollback to previous states
 - `show_file_diff` - Compare current files with checkpoint versions
+
+### **Sandbox Deployment**
+- `deploy_to_sandbox` - Deploy project to cloud sandbox (E2B)
+- `sync_to_sandbox` - Sync files to existing sandbox
+- `list_sandboxes` - List active deployments
+- `get_sandbox_status` - Check sandbox details
+- `delete_sandbox` - Remove sandbox deployments
+- `start_code_sync` - Start real-time file watching
+- `stop_code_sync` - Stop file watching
+- `get_sync_status` - Check sync status
 
 ## 📚 Examples
 

@@ -19,6 +19,11 @@ export interface StoredConfig {
     openai?: string;
     anthropic?: string;
   };
+  sandbox?: {
+    provider?: string;
+    apiKey?: string;
+    enabled?: boolean;
+  };
 }
 
 export async function loadConfig(): Promise<AppConfig> {
@@ -42,24 +47,34 @@ export async function loadConfig(): Promise<AppConfig> {
 function loadFromEnv(): AppConfig | null {
   const openaiKey = process.env.OPENAI_API_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const e2bKey = process.env.E2B_API_KEY;
+
+  let config: AppConfig | null = null;
 
   if (openaiKey) {
-    return {
+    config = {
       provider: 'openai',
       apiKey: openaiKey,
       model: process.env.OPENAI_MODEL || 'gpt-4'
     };
-  }
-
-  if (anthropicKey) {
-    return {
+  } else if (anthropicKey) {
+    config = {
       provider: 'anthropic',
       apiKey: anthropicKey,
       model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022'
     };
   }
 
-  return null;
+  // Add sandbox config if E2B key is available
+  if (config && e2bKey) {
+    config.sandbox = {
+      provider: 'e2b',
+      apiKey: e2bKey,
+      enabled: true
+    };
+  }
+
+  return config;
 }
 
 async function loadFromFile(): Promise<AppConfig | null> {

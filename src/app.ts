@@ -3,16 +3,23 @@ import inquirer from 'inquirer';
 import { createLLMClient, LLMClient, LLMConfig, Message } from './llm';
 import { FileTools } from './tools/file-tools';
 import { AdvancedTools } from './tools/advanced-tools';
+import { SandboxTools } from './tools/sandbox-tools';
 import { ConversationManager } from './conversation-manager';
 
 export interface AppConfig extends LLMConfig {
   workingDirectory?: string;
+  sandbox?: {
+    provider?: string;
+    apiKey?: string;
+    enabled?: boolean;
+  };
 }
 
 export class CodePromptApp {
   private llmClient: LLMClient;
   private fileTools: FileTools;
   private advancedTools: AdvancedTools;
+  private sandboxTools: SandboxTools;
   private config: AppConfig;
   private conversationHistory: Message[] = [];
   private conversationManager: ConversationManager;
@@ -24,7 +31,17 @@ export class CodePromptApp {
     this.llmClient = createLLMClient(config);
     this.fileTools = new FileTools(config.workingDirectory);
     this.advancedTools = new AdvancedTools(config.workingDirectory);
+    this.sandboxTools = new SandboxTools(config.workingDirectory);
     this.conversationManager = new ConversationManager();
+    this.initializeSandboxTools();
+  }
+
+  private initializeSandboxTools(): void {
+    if (this.config.sandbox?.enabled && this.config.sandbox.provider && this.config.sandbox.apiKey) {
+      this.sandboxTools.setSandboxConfig(this.config.sandbox.provider, {
+        apiKey: this.config.sandbox.apiKey
+      });
+    }
   }
 
   async startInteractive(): Promise<void> {
@@ -120,7 +137,11 @@ export class CodePromptApp {
       
       console.log(chalk.blue(`🔄 Processing (${iteration}/${maxIterations})...`));
       
-      const tools = [...this.fileTools.getTools(), ...this.advancedTools.getTools()];
+      const tools = [
+        ...this.fileTools.getTools(), 
+        ...this.advancedTools.getTools(),
+        ...this.sandboxTools.getTools()
+      ];
       const response = await this.llmClient.generateResponseWithHistory(this.conversationHistory, tools);
 
       // Add assistant response to conversation history
@@ -160,11 +181,14 @@ export class CodePromptApp {
           let result: string;
           const advancedToolNames = this.advancedTools.getTools().map(t => t.name);
           const basicToolNames = this.fileTools.getTools().map(t => t.name);
+          const sandboxToolNames = this.sandboxTools.getTools().map(t => t.name);
           
           if (advancedToolNames.includes(toolCall.name)) {
             result = await this.advancedTools.executeTool(toolCall.name, toolCall.parameters);
           } else if (basicToolNames.includes(toolCall.name)) {
             result = await this.fileTools.executeTool(toolCall.name, toolCall.parameters);
+          } else if (sandboxToolNames.includes(toolCall.name)) {
+            result = await this.sandboxTools.executeTool(toolCall.name, toolCall.parameters);
           } else {
             result = `Error: Unknown tool "${toolCall.name}"`;
           }
@@ -211,7 +235,11 @@ export class CodePromptApp {
         this.config.workingDirectory = workingDirectory;
       }
 
-      const tools = [...this.fileTools.getTools(), ...this.advancedTools.getTools()];
+      const tools = [
+        ...this.fileTools.getTools(), 
+        ...this.advancedTools.getTools(),
+        ...this.sandboxTools.getTools()
+      ];
       const response = await this.llmClient.generateResponse(prompt, tools);
 
       // Display LLM response
@@ -231,11 +259,14 @@ export class CodePromptApp {
           let result: string;
           const advancedToolNames = this.advancedTools.getTools().map(t => t.name);
           const basicToolNames = this.fileTools.getTools().map(t => t.name);
+          const sandboxToolNames = this.sandboxTools.getTools().map(t => t.name);
           
           if (advancedToolNames.includes(toolCall.name)) {
             result = await this.advancedTools.executeTool(toolCall.name, toolCall.parameters);
           } else if (basicToolNames.includes(toolCall.name)) {
             result = await this.fileTools.executeTool(toolCall.name, toolCall.parameters);
+          } else if (sandboxToolNames.includes(toolCall.name)) {
+            result = await this.sandboxTools.executeTool(toolCall.name, toolCall.parameters);
           } else {
             result = `Error: Unknown tool "${toolCall.name}"`;
           }
@@ -254,7 +285,9 @@ export class CodePromptApp {
   async setWorkingDirectory(directory: string): Promise<void> {
     this.fileTools = new FileTools(directory);
     this.advancedTools = new AdvancedTools(directory);
+    this.sandboxTools = new SandboxTools(directory);
     this.config.workingDirectory = directory;
+    this.initializeSandboxTools(); // Re-initialize sandbox tools with new directory
     console.log(chalk.blue(`📁 Working directory set to: ${directory}`));
   }
 
