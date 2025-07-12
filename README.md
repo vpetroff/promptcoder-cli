@@ -14,6 +14,7 @@
 - 🤖 **Multiple LLM Providers**: OpenAI (GPT-4) and Anthropic (Claude) support
 - 🚀 **Sandbox Deployment**: Deploy code to cloud environments (E2B) with auto-detection
 - 🔄 **File Watching**: Real-time sync of file changes to deployed sandboxes
+- 🛡️ **Exit Protection**: Double Ctrl+C required to prevent accidental exits
 - 🚀 **Retry Logic**: Automatic retry with exponential backoff for API rate limits
 - 🎨 **Beautiful Interface**: Colorized output with progress indicators
 - 📁 **Project-Aware**: Maintains working directory context per conversation
@@ -114,6 +115,22 @@ delete        # Delete a conversation
 clear         # Clear current conversation
 ```
 
+### CLI Commands in Interactive Mode
+```bash
+# All CLI commands can be run in interactive mode with / prefix:
+/help                              # Show available CLI commands
+/config                           # Configure API keys and settings
+/deploy --template react-ts       # Deploy current project
+/sandbox list                     # List active sandboxes
+/sandbox status <sandbox-id>      # Get sandbox details
+/sandbox delete <sandbox-id>      # Delete a sandbox
+/watch <sandbox-id>               # Start file watching
+/stop [sandbox-id]                # Stop file watching (all or specific)
+
+# Exit Protection: Press Ctrl+C twice within 3 seconds to exit
+# Single Ctrl+C is ignored to prevent accidental exits
+```
+
 ## 🔧 Available Tools
 
 The AI has access to these powerful tools:
@@ -197,11 +214,29 @@ load
 # Continue with full context preserved
 ```
 
+### CLI Commands in Interactive Mode
+```bash
+# Deploy and test your project without leaving the conversation
+promptcoder i
+Prompt: Create a React TypeScript app with routing
+# ... AI creates the app ...
+/deploy --template react-ts --name "My App"  # Deploy to sandbox
+# ✅ Deployment successful! Sandbox ID: abc123...
+/watch abc123                                # Start file watching
+# 🔄 File watcher started successfully
+Prompt: Add a dark mode toggle to the navbar
+# ... AI makes changes ...
+# ✅ Synced 3 file(s) to sandbox (automatically)
+/sandbox list                                # Check all deployments
+```
+
 ## 🔄 Conversation Flow
 
 ```
 🤖 PromptCoder Interactive Mode
 Commands: exit, clear, save, load, list, rename, delete
+CLI Commands: /deploy, /sandbox, /watch (use /help for full list)
+Press Ctrl+C twice to exit
 
 [My React Project] Prompt: Add authentication to the app
 

@@ -198,12 +198,32 @@ program
         }
       });
 
-      // Keep the process alive and handle graceful shutdown
+      // Keep the process alive and handle graceful shutdown with double Ctrl+C
+      let ctrlCCount = 0;
+      let ctrlCTimer: NodeJS.Timeout | null = null;
+      
       process.on('SIGINT', async () => {
-        console.log('\n⏹️ Stopping file watcher...');
-        await watcher.stopAllWatching();
-        console.log('👋 File watching stopped. Goodbye!');
-        process.exit(0);
+        ctrlCCount++;
+
+        if (ctrlCCount === 1) {
+          console.log('\n⚠️  Press Ctrl+C again within 3 seconds to stop file watching');
+          
+          // Reset counter after 3 seconds
+          ctrlCTimer = setTimeout(() => {
+            ctrlCCount = 0;
+            console.log('Stop cancelled. File watching continues...');
+          }, 3000);
+        } else if (ctrlCCount >= 2) {
+          // Clear the timer if it exists
+          if (ctrlCTimer) {
+            clearTimeout(ctrlCTimer);
+          }
+          
+          console.log('\n⏹️ Stopping file watcher...');
+          await watcher.stopAllWatching();
+          console.log('👋 File watching stopped. Goodbye!');
+          process.exit(0);
+        }
       });
 
       // Keep the process alive
