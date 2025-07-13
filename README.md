@@ -74,6 +74,9 @@ promptcoder p "Add error handling to my express server" --directory ./my-project
 
 ### Sandbox Deployment
 ```bash
+# First, configure your sandbox settings
+promptcoder sandbox init  # or use interactive mode: /sandbox init
+
 # Deploy current project to a sandbox
 promptcoder deploy
 
@@ -122,6 +125,7 @@ promptcoder watch <sandbox-id> --ignore "node_modules/**" "dist/**"
 
 # Development & Deployment
 /config                           # Configure API keys and settings
+/sandbox init                    # Configure sandbox deployment (E2B API key)
 /deploy --template react-ts       # Deploy current project
 /sandbox list                     # List active sandboxes
 /sandbox status <sandbox-id>      # Get sandbox details

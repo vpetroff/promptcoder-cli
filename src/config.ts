@@ -102,7 +102,12 @@ async function loadFromFile(): Promise<AppConfig | null> {
       return null;
     }
 
-    return { provider, apiKey, model };
+    return { 
+      provider, 
+      apiKey, 
+      model,
+      sandbox: storedConfig.sandbox 
+    };
   } catch (error) {
     console.log(chalk.red('❌ Error loading config file:'), error);
     return null;

@@ -159,7 +159,7 @@ export class SandboxManager {
     }
 
     // Default fallback
-    return 'node20';
+    return 'base';
   }
 
   private async hasFileContaining(searchTerm: string, patterns: string[]): Promise<boolean> {
@@ -248,7 +248,7 @@ export class SandboxManager {
         name: 'React TypeScript',
         description: 'React application with TypeScript',
         provider: 'e2b',
-        template: 'node20',
+        template: 'base',
         startCommand: 'npm install && npm run dev',
         port: 3000,
         environment: { NODE_ENV: 'development' }
@@ -258,7 +258,7 @@ export class SandboxManager {
         name: 'React JavaScript',
         description: 'React application with JavaScript',
         provider: 'e2b',
-        template: 'node20',
+        template: 'base',
         startCommand: 'npm install && npm run dev',
         port: 3000,
         environment: { NODE_ENV: 'development' }
@@ -268,7 +268,7 @@ export class SandboxManager {
         name: 'Next.js',
         description: 'Next.js React framework',
         provider: 'e2b',
-        template: 'node20',
+        template: 'base',
         startCommand: 'npm install && npm run dev',
         port: 3000,
         environment: { NODE_ENV: 'development' }
@@ -278,7 +278,7 @@ export class SandboxManager {
         name: 'Express.js',
         description: 'Express.js Node.js server',
         provider: 'e2b',
-        template: 'node20',
+        template: 'base',
         startCommand: 'npm install && npm start',
         port: 3000,
         environment: { NODE_ENV: 'development' }
@@ -288,7 +288,7 @@ export class SandboxManager {
         name: 'Node.js TypeScript',
         description: 'Node.js application with TypeScript',
         provider: 'e2b',
-        template: 'node20',
+        template: 'base',
         startCommand: 'npm install && npm run build && npm start',
         port: 3000,
         environment: { NODE_ENV: 'development' }
@@ -298,7 +298,7 @@ export class SandboxManager {
         name: 'Python 3',
         description: 'Python 3 application',
         provider: 'e2b',
-        template: 'python3',
+        template: 'base',
         startCommand: 'pip install -r requirements.txt && python main.py',
         port: 8000,
         environment: { PYTHONPATH: '.' }
@@ -308,7 +308,7 @@ export class SandboxManager {
         name: 'Flask',
         description: 'Flask Python web framework',
         provider: 'e2b',
-        template: 'python3',
+        template: 'base',
         startCommand: 'pip install -r requirements.txt && python app.py',
         port: 5000,
         environment: { FLASK_ENV: 'development' }
@@ -318,7 +318,7 @@ export class SandboxManager {
         name: 'FastAPI',
         description: 'FastAPI Python web framework',
         provider: 'e2b',
-        template: 'python3',
+        template: 'base',
         startCommand: 'pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000',
         port: 8000,
         environment: { PYTHONPATH: '.' }
