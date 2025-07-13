@@ -19,6 +19,14 @@ export abstract class BaseCommand {
   
   abstract execute(context: CommandContext): Promise<void>;
   
+  /**
+   * Optional method for tab completion. Implement this in your command to provide autocomplete.
+   * @param parts - Array of command parts split by space (e.g., ["/deploy", "--template", "react"])  
+   * @param input - The full input string
+   * @returns [matches, partialToComplete] - Array of matches and the partial string being completed
+   */
+  getCompletions?(parts: string[], input: string): [string[], string];
+  
   protected validateArgs(args: string[], minArgs: number, maxArgs?: number): void {
     if (args.length < minArgs) {
       throw new Error(`Command '${this.metadata.name}' requires at least ${minArgs} argument(s)`);
@@ -57,5 +65,9 @@ export abstract class BaseCommand {
     }
     
     return { flags, positional };
+  }
+  
+  protected filterMatches(options: string[], partial: string): string[] {
+    return options.filter(option => option.startsWith(partial));
   }
 }

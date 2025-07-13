@@ -14,6 +14,16 @@ export class HelpCommand extends BaseCommand {
     super();
   }
 
+  getCompletions(parts: string[], input: string): [string[], string] {
+    if (parts.length === 2) {
+      const commandNames = Array.from(this.commandRegistry.values()).map(cmd => cmd.metadata.name);
+      const partial = parts[1] || '';
+      const matches = this.filterMatches(commandNames, partial);
+      return [matches, partial];
+    }
+    return [[], input];
+  }
+
   async execute(context: CommandContext): Promise<void> {
     const commandName = context.args[0];
 
@@ -70,6 +80,7 @@ export class HelpCommand extends BaseCommand {
 
     console.log(chalk.yellow('💡 Tips:'));
     console.log(chalk.gray('  • Use /help <command> for detailed help on a specific command'));
+    console.log(chalk.gray('  • Press Tab after "/" for command autocomplete'));
     console.log(chalk.gray('  • Press Ctrl+C to exit with auto-save'));
     console.log(chalk.gray('  • Commands are case-insensitive'));
   }

@@ -8,6 +8,7 @@ import { AdvancedTools } from './tools/advanced-tools';
 import { SandboxTools } from './tools/sandbox-tools';
 import { ConversationManager } from './conversation-manager';
 import { CommandRegistry } from './commands/command-registry';
+import { AutocompleteManager } from './autocomplete';
 
 export interface AppConfig extends LLMConfig {
   workingDirectory?: string;
@@ -30,6 +31,7 @@ export class CodePromptApp {
   public currentConversationName: string | null = null;
   private activeFileWatchers: Map<string, any> = new Map();
   private commandRegistry: CommandRegistry;
+  private autocompleteManager: AutocompleteManager;
 
   constructor(config: AppConfig) {
     this.config = config;
@@ -39,6 +41,7 @@ export class CodePromptApp {
     this.sandboxTools = new SandboxTools(config.workingDirectory);
     this.conversationManager = new ConversationManager();
     this.commandRegistry = new CommandRegistry();
+    this.autocompleteManager = new AutocompleteManager(this.commandRegistry);
     this.initializeSandboxTools();
     
     // Set up graceful exit handler early
@@ -93,7 +96,8 @@ export class CodePromptApp {
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
-        terminal: true
+        terminal: true,
+        completer: this.autocompleteManager.createReadlineCompleter()
       });
 
       rl.question(message, (answer) => {
@@ -110,10 +114,12 @@ export class CodePromptApp {
     });
   }
 
+
   async startInteractive(): Promise<void> {
     console.log(chalk.blue.bold('🤖 PromptCoder Interactive Mode'));
     console.log(chalk.gray('Commands: /exit, /clear, /save, /load, /list, /rename, /delete'));
     console.log(chalk.gray('CLI Commands: /deploy, /sandbox, /watch, /stop (use /help for full list)'));
+    console.log(chalk.gray('💡 Type "/" and press Tab for command autocomplete'));
     console.log(chalk.gray('Press Ctrl+C to exit\n'));
 
     // Show current conversation info

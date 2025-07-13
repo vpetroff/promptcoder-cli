@@ -13,6 +13,7 @@ export class ExitCommand extends BaseCommand {
 
   async execute(context: CommandContext): Promise<void> {
     console.log(chalk.blue('👋 Goodbye!'));
+    console.log(chalk.green('🎉 Thanks for using PromptCoder!'));
     process.exit(0);
   }
 }

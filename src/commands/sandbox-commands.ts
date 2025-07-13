@@ -13,6 +13,27 @@ export class DeployCommand extends BaseCommand {
     ]
   };
 
+  getCompletions(parts: string[], input: string): [string[], string] {
+    const lastPart = parts[parts.length - 1];
+    const prevPart = parts[parts.length - 2];
+    
+    // Template value completion
+    if (prevPart === '--template') {
+      const templates = ['react-ts', 'nextjs', 'vue', 'node-ts', 'python', 'vanilla'];
+      const matches = this.filterMatches(templates, lastPart);
+      return [matches, lastPart];
+    }
+    
+    // Option completion
+    if (lastPart.startsWith('--')) {
+      const options = ['--template', '--name', '--no-open'];
+      const matches = this.filterMatches(options, lastPart);
+      return [matches, lastPart];
+    }
+    
+    return [[], input];
+  }
+
   async execute(context: CommandContext): Promise<void> {
     if (!context.app.config.sandbox?.enabled || !context.app.config.sandbox.apiKey) {
       console.log(chalk.red('🚫 Sandbox deployment not configured. Run /config to set up.'));
@@ -68,6 +89,16 @@ export class SandboxCommand extends BaseCommand {
       '/sandbox delete abc123'
     ]
   };
+
+  getCompletions(parts: string[], input: string): [string[], string] {
+    if (parts.length === 2) {
+      const actions = ['list', 'status', 'delete'];
+      const partial = parts[1] || '';
+      const matches = this.filterMatches(actions, partial);
+      return [matches, partial];
+    }
+    return [[], input];
+  }
 
   async execute(context: CommandContext): Promise<void> {
     if (!context.app.config.sandbox?.enabled || !context.app.config.sandbox.apiKey) {
@@ -146,6 +177,34 @@ export class WatchCommand extends BaseCommand {
       '/watch abc123 --ignore "node_modules/**"'
     ]
   };
+
+  getCompletions(parts: string[], input: string): [string[], string] {
+    const lastPart = parts[parts.length - 1];
+    const prevPart = parts[parts.length - 2];
+    
+    // Watch pattern completion
+    if (prevPart === '--watch') {
+      const patterns = ['src/**/*', '**/*.ts', '**/*.js', '**/*.tsx', '**/*.jsx'];
+      const matches = this.filterMatches(patterns, lastPart);
+      return [matches, lastPart];
+    }
+    
+    // Ignore pattern completion
+    if (prevPart === '--ignore') {
+      const patterns = ['node_modules/**', '.git/**', 'dist/**', 'build/**', '*.log'];
+      const matches = this.filterMatches(patterns, lastPart);
+      return [matches, lastPart];
+    }
+    
+    // Option completion
+    if (lastPart.startsWith('--')) {
+      const options = ['--watch', '--ignore'];
+      const matches = this.filterMatches(options, lastPart);
+      return [matches, lastPart];
+    }
+    
+    return [[], input];
+  }
 
   async execute(context: CommandContext): Promise<void> {
     if (!context.app.config.sandbox?.enabled || !context.app.config.sandbox.apiKey) {

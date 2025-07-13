@@ -18,6 +18,7 @@
 - 🚀 **Retry Logic**: Automatic retry with exponential backoff for API rate limits
 - 🎨 **Beautiful Interface**: Colorized output with progress indicators
 - 📁 **Project-Aware**: Maintains working directory context per conversation
+- ⌨️ **Smart Autocomplete**: Tab completion for commands, options, and common patterns
 
 ## 🚀 Installation
 
@@ -107,6 +108,7 @@ promptcoder watch <sandbox-id> --ignore "node_modules/**" "dist/**"
 ### Interactive Mode Commands
 ```bash
 # All commands in interactive mode require / prefix:
+# 💡 Press Tab after "/" for autocomplete!
 
 # Conversation Management
 /help                              # Show all available commands
