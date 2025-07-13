@@ -12,7 +12,11 @@
       "Bash(promptcoder --help:*)",
       "Bash(chmod:*)",
       "Bash(npm view:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "WebFetch(domain:e2b.dev)",
+      "Bash(timeout:*)",
+      "WebFetch(domain:www.daytona.io)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

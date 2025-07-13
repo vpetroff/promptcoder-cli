@@ -22,6 +22,8 @@ export interface StoredConfig {
   sandbox?: {
     provider?: string;
     apiKey?: string;
+    apiUrl?: string;
+    target?: string;
     enabled?: boolean;
   };
 }
@@ -48,6 +50,7 @@ function loadFromEnv(): AppConfig | null {
   const openaiKey = process.env.OPENAI_API_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const e2bKey = process.env.E2B_API_KEY;
+  const daytonaKey = process.env.DAYTONA_API_KEY;
 
   let config: AppConfig | null = null;
 
@@ -65,11 +68,19 @@ function loadFromEnv(): AppConfig | null {
     };
   }
 
-  // Add sandbox config if E2B key is available
+  // Add sandbox config - prefer E2B, then Daytona
   if (config && e2bKey) {
     config.sandbox = {
       provider: 'e2b',
       apiKey: e2bKey,
+      enabled: true
+    };
+  } else if (config && daytonaKey) {
+    config.sandbox = {
+      provider: 'daytona',
+      apiKey: daytonaKey,
+      apiUrl: process.env.DAYTONA_API_URL,
+      target: process.env.DAYTONA_TARGET,
       enabled: true
     };
   }
@@ -152,6 +163,73 @@ export async function setupConfig(): Promise<AppConfig> {
     }
   ]);
 
+  // Ask about sandbox configuration
+  const { setupSandbox } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'setupSandbox',
+      message: 'Would you like to configure sandbox deployment?',
+      default: true
+    }
+  ]);
+
+  let sandboxConfig: AppConfig['sandbox'] | undefined;
+
+  if (setupSandbox) {
+    const { sandboxProvider } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'sandboxProvider',
+        message: 'Choose your sandbox provider:',
+        choices: [
+          { name: 'E2B (Template-based sandboxes)', value: 'e2b' },
+          { name: 'Daytona (Docker workspaces)', value: 'daytona' },
+          { name: 'Skip for now', value: 'none' }
+        ]
+      }
+    ]);
+
+    if (sandboxProvider !== 'none') {
+      const { sandboxApiKey } = await inquirer.prompt([
+        {
+          type: 'password',
+          name: 'sandboxApiKey',
+          message: `Enter your ${sandboxProvider === 'e2b' ? 'E2B' : 'Daytona'} API key:`,
+          validate: (input: string) => input.trim().length > 0 || 'API key is required'
+        }
+      ]);
+
+      sandboxConfig = {
+        provider: sandboxProvider,
+        apiKey: sandboxApiKey,
+        enabled: true
+      };
+
+      // For Daytona, ask for additional configuration
+      if (sandboxProvider === 'daytona') {
+        const { daytonaUrl, daytonaTarget } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'daytonaUrl',
+            message: 'Daytona API URL (leave empty for default):',
+            default: ''
+          },
+          {
+            type: 'input',
+            name: 'daytonaTarget',
+            message: 'Daytona target region (leave empty for default):',
+            default: ''
+          }
+        ]);
+
+        if (daytonaUrl) sandboxConfig.apiUrl = daytonaUrl;
+        if (daytonaTarget) sandboxConfig.target = daytonaTarget;
+      }
+
+      console.log(chalk.green(`✅ ${sandboxProvider === 'e2b' ? 'E2B' : 'Daytona'} sandbox configured!`));
+    }
+  }
+
   const { saveToFile } = await inquirer.prompt([
     {
       type: 'confirm',
@@ -162,12 +240,12 @@ export async function setupConfig(): Promise<AppConfig> {
   ]);
 
   if (saveToFile) {
-    await saveConfig(provider, apiKey, model);
+    await saveConfigWithSandbox(provider, apiKey, model, sandboxConfig);
   }
 
   console.log(chalk.green('✅ Configuration completed!\n'));
 
-  return { provider, apiKey, model };
+  return { provider, apiKey, model, sandbox: sandboxConfig };
 }
 
 async function saveConfig(provider: 'openai' | 'anthropic', apiKey: string, model: string): Promise<void> {
@@ -189,6 +267,45 @@ async function saveConfig(provider: 'openai' | 'anthropic', apiKey: string, mode
     } else {
       storedConfig.anthropicApiKey = apiKey;
       storedConfig.defaultModel = { ...storedConfig.defaultModel, anthropic: model };
+    }
+
+    await fs.writeJson(CONFIG_FILE, storedConfig, { spaces: 2 });
+    console.log(chalk.gray(`Configuration saved to ${CONFIG_FILE}`));
+  } catch (error) {
+    console.log(chalk.red('❌ Error saving config:'), error);
+  }
+}
+
+async function saveConfigWithSandbox(provider: 'openai' | 'anthropic', apiKey: string, model: string, sandboxConfig?: AppConfig['sandbox']): Promise<void> {
+  try {
+    await fs.ensureDir(CONFIG_DIR);
+    
+    let storedConfig: StoredConfig = { defaultProvider: provider };
+    
+    // Load existing config if it exists
+    if (await fs.pathExists(CONFIG_FILE)) {
+      storedConfig = await fs.readJson(CONFIG_FILE);
+    }
+
+    // Update LLM config
+    storedConfig.defaultProvider = provider;
+    if (provider === 'openai') {
+      storedConfig.openaiApiKey = apiKey;
+      storedConfig.defaultModel = { ...storedConfig.defaultModel, openai: model };
+    } else {
+      storedConfig.anthropicApiKey = apiKey;
+      storedConfig.defaultModel = { ...storedConfig.defaultModel, anthropic: model };
+    }
+
+    // Update sandbox config if provided
+    if (sandboxConfig) {
+      storedConfig.sandbox = {
+        provider: sandboxConfig.provider,
+        apiKey: sandboxConfig.apiKey,
+        apiUrl: sandboxConfig.apiUrl,
+        target: sandboxConfig.target,
+        enabled: sandboxConfig.enabled
+      };
     }
 
     await fs.writeJson(CONFIG_FILE, storedConfig, { spaces: 2 });
@@ -225,6 +342,8 @@ export async function saveAppConfig(appConfig: AppConfig): Promise<void> {
       storedConfig.sandbox = {
         provider: appConfig.sandbox.provider,
         apiKey: appConfig.sandbox.apiKey,
+        apiUrl: appConfig.sandbox.apiUrl,
+        target: appConfig.sandbox.target,
         enabled: appConfig.sandbox.enabled
       };
     }

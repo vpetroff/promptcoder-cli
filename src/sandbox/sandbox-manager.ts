@@ -2,20 +2,79 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { glob } from 'glob';
 import { createSandboxProvider } from './providers';
-import { SandboxProvider, Sandbox, SandboxConfig, FileMap, DeploymentResult, SandboxTemplate } from './types';
+import { SandboxProvider, Sandbox, SandboxConfig, FileMap, DeploymentResult, SandboxTemplate, DockerSandboxConfig } from './types';
+import { DockerManager, DockerfileType } from '../docker/docker-manager';
+import { DockerfileSelector } from '../docker/dockerfile-selector';
 
 export class SandboxManager {
   private provider: SandboxProvider;
   private workingDirectory: string;
   private templates: Map<string, SandboxTemplate> = new Map();
+  private dockerManager: DockerManager;
+  private dockerfileSelector: DockerfileSelector;
 
   constructor(providerName: string, providerConfig: any, workingDirectory: string = process.cwd()) {
     this.provider = createSandboxProvider(providerName, providerConfig);
     this.workingDirectory = workingDirectory;
+    this.dockerManager = new DockerManager();
+    this.dockerfileSelector = new DockerfileSelector();
     this.loadDefaultTemplates();
   }
 
   async deployProject(config: SandboxConfig = {}): Promise<DeploymentResult> {
+    // Check if we should use Docker-based deployment
+    if (config.template === 'docker' || await this.shouldUseDockerDeployment()) {
+      return this.deployProjectWithDocker(config);
+    }
+
+    // Use traditional deployment
+    return this.deployProjectTraditional(config);
+  }
+
+  /**
+   * Deploy project using Docker-based approach with LLM selection
+   */
+  async deployProjectWithDocker(config: SandboxConfig = {}): Promise<DeploymentResult> {
+    const startTime = Date.now();
+
+    try {
+      // Get fallback Dockerfile selection (will be replaced by LLM in actual usage)
+      const dockerfileSelection = await this.dockerfileSelector.getFallbackSelection(this.workingDirectory);
+      
+      console.log(`🔍 Selected Dockerfile: ${dockerfileSelection.type}`);
+      console.log(`📝 Reasoning: ${dockerfileSelection.reasoning}`);
+
+      // Get the Dockerfile content
+      const dockerfileContent = await this.dockerManager.getDockerfile(dockerfileSelection.type);
+
+      // Collect project files
+      const files = await this.collectProjectFiles();
+
+      // Configure Docker deployment
+      const dockerConfig: DockerSandboxConfig = {
+        name: config.name || `Docker App ${Date.now()}`,
+        port: this.getPortForDockerfile(dockerfileSelection.type),
+        environment: config.environment || {},
+        imageName: this.dockerManager.generateImageName(config.name)
+      };
+
+      // Deploy using provider's Docker support
+      if (this.provider.deployWithDockerfile) {
+        return await this.provider.deployWithDockerfile(dockerfileContent, files, dockerConfig);
+      } else {
+        throw new Error(`Provider ${this.provider.name} does not support Docker deployment`);
+      }
+
+    } catch (error) {
+      const deploymentTime = Date.now() - startTime;
+      throw new Error(`Docker deployment failed after ${deploymentTime}ms: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Traditional deployment method (existing logic)
+   */
+  async deployProjectTraditional(config: SandboxConfig = {}): Promise<DeploymentResult> {
     const startTime = Date.now();
 
     // Auto-detect project type if template not specified
@@ -326,5 +385,74 @@ export class SandboxManager {
     ];
 
     templates.forEach(template => this.addTemplate(template));
+  }
+
+  /**
+   * Determine if we should use Docker-based deployment
+   */
+  private async shouldUseDockerDeployment(): Promise<boolean> {
+    // Check if Docker is available
+    const dockerCheck = await this.dockerManager.checkDockerAvailable();
+    if (!dockerCheck.available) {
+      return false;
+    }
+
+    // For now, default to Docker deployment if available
+    // In the future, this could be based on user preference or project type
+    return true;
+  }
+
+  /**
+   * Get the appropriate port for a Dockerfile type
+   */
+  private getPortForDockerfile(dockerfileType: DockerfileType): number {
+    switch (dockerfileType) {
+      case 'react':
+      case 'nextjs':
+        return 3000;
+      case 'dotnet':
+        return 5000;
+      case 'basic-webserver':
+        return 3000; // Changed from 80 to 3000 for E2B compatibility
+      default:
+        return 3000;
+    }
+  }
+
+  /**
+   * Deploy project with LLM-selected Dockerfile (for use by LLM tools)
+   */
+  async deployProjectWithLLMSelection(dockerfileType: DockerfileType, reasoning: string, config: SandboxConfig = {}): Promise<DeploymentResult> {
+    const startTime = Date.now();
+
+    try {
+      console.log(`🤖 LLM selected Dockerfile: ${dockerfileType}`);
+      console.log(`📝 Reasoning: ${reasoning}`);
+
+      // Get the Dockerfile content
+      const dockerfileContent = await this.dockerManager.getDockerfile(dockerfileType);
+
+      // Collect project files
+      const files = await this.collectProjectFiles();
+
+      // Configure Docker deployment
+      const dockerConfig: DockerSandboxConfig = {
+        name: config.name || `${dockerfileType} App ${Date.now()}`,
+        port: this.getPortForDockerfile(dockerfileType),
+        environment: config.environment || {},
+        imageName: this.dockerManager.generateImageName(config.name)
+      };
+
+      // Deploy using provider's Docker support
+      if (this.provider.deployWithDockerfile) {
+        return await this.provider.deployWithDockerfile(dockerfileContent, files, dockerConfig);
+      } else {
+        throw new Error(`Provider ${this.provider.name} does not support Docker deployment`);
+      }
+
+    } catch (error) {
+      const deploymentTime = Date.now() - startTime;
+      throw new Error(`LLM Docker deployment failed after ${deploymentTime}ms: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 }

@@ -157,6 +157,14 @@ export class SandboxCommand extends BaseCommand {
       console.log(chalk.blue('Current configuration:'));
       console.log(chalk.gray(`Provider: ${context.app.config.sandbox.provider || 'e2b'}`));
       console.log(chalk.gray(`API Key: ${context.app.config.sandbox.apiKey ? '***hidden***' : 'Not set'}`));
+      if (context.app.config.sandbox.provider === 'daytona') {
+        if (context.app.config.sandbox.apiUrl) {
+          console.log(chalk.gray(`API URL: ${context.app.config.sandbox.apiUrl}`));
+        }
+        if (context.app.config.sandbox.target) {
+          console.log(chalk.gray(`Target: ${context.app.config.sandbox.target}`));
+        }
+      }
       console.log(chalk.gray(`Enabled: ${context.app.config.sandbox.enabled ? 'Yes' : 'No'}\n`));
     }
 
@@ -167,15 +175,15 @@ export class SandboxCommand extends BaseCommand {
           name: 'provider',
           message: 'Select sandbox provider:',
           choices: [
-            { name: 'E2B (Recommended)', value: 'e2b' },
-            { name: 'Other (Future support)', value: 'other', disabled: true }
+            { name: 'E2B (Template-based sandboxes)', value: 'e2b' },
+            { name: 'Daytona (Docker workspaces)', value: 'daytona' }
           ],
           default: context.app.config.sandbox?.provider || 'e2b'
         },
         {
           type: 'input',
           name: 'apiKey',
-          message: 'Enter your E2B API key:',
+          message: (answers) => `Enter your ${answers.provider === 'e2b' ? 'E2B' : 'Daytona'} API key:`,
           validate: (input: string) => {
             if (!input.trim()) {
               return 'API key is required';
@@ -185,7 +193,21 @@ export class SandboxCommand extends BaseCommand {
             }
             return true;
           },
-          when: (answers) => answers.provider === 'e2b'
+          when: (answers) => answers.provider === 'e2b' || answers.provider === 'daytona'
+        },
+        {
+          type: 'input',
+          name: 'apiUrl',
+          message: 'Daytona API URL (leave empty for default):',
+          default: '',
+          when: (answers) => answers.provider === 'daytona'
+        },
+        {
+          type: 'input',
+          name: 'target',
+          message: 'Daytona target region (leave empty for default):',
+          default: '',
+          when: (answers) => answers.provider === 'daytona'
         },
         {
           type: 'confirm',
@@ -203,6 +225,12 @@ export class SandboxCommand extends BaseCommand {
       context.app.config.sandbox.provider = answers.provider;
       context.app.config.sandbox.apiKey = answers.apiKey;
       context.app.config.sandbox.enabled = answers.enabled;
+      
+      // Add Daytona-specific configuration
+      if (answers.provider === 'daytona') {
+        if (answers.apiUrl) context.app.config.sandbox.apiUrl = answers.apiUrl;
+        if (answers.target) context.app.config.sandbox.target = answers.target;
+      }
 
       // Save to config file
       await this.saveConfigToFile(context.app.config);
@@ -210,7 +238,7 @@ export class SandboxCommand extends BaseCommand {
       // Re-initialize sandbox tools with new config
       context.app.initializeSandboxTools();
 
-      console.log(chalk.green('\n✅ Sandbox initialization completed successfully!'));
+      console.log(chalk.green(`\n✅ ${answers.provider === 'e2b' ? 'E2B' : 'Daytona'} sandbox initialization completed successfully!`));
       
       if (answers.enabled) {
         console.log(chalk.blue('\n💡 You can now use:'));

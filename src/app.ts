@@ -6,6 +6,7 @@ import { createLLMClient, LLMClient, LLMConfig, Message } from './llm';
 import { FileTools } from './tools/file-tools';
 import { AdvancedTools } from './tools/advanced-tools';
 import { SandboxTools } from './tools/sandbox-tools';
+import { DockerTools } from './tools/docker-tools';
 import { ConversationManager } from './conversation-manager';
 import { CommandRegistry } from './commands/command-registry';
 import { AutocompleteManager } from './autocomplete';
@@ -15,6 +16,8 @@ export interface AppConfig extends LLMConfig {
   sandbox?: {
     provider?: string;
     apiKey?: string;
+    apiUrl?: string;
+    target?: string;
     enabled?: boolean;
   };
 }
@@ -24,6 +27,7 @@ export class CodePromptApp {
   private fileTools: FileTools;
   private advancedTools: AdvancedTools;
   private sandboxTools: SandboxTools;
+  private dockerTools: DockerTools;
   public config: AppConfig;
   public conversationHistory: Message[] = [];
   public conversationManager: ConversationManager;
@@ -39,6 +43,7 @@ export class CodePromptApp {
     this.fileTools = new FileTools(config.workingDirectory);
     this.advancedTools = new AdvancedTools(config.workingDirectory);
     this.sandboxTools = new SandboxTools(config.workingDirectory);
+    this.dockerTools = new DockerTools(config.workingDirectory);
     this.conversationManager = new ConversationManager();
     this.commandRegistry = new CommandRegistry();
     this.autocompleteManager = new AutocompleteManager(this.commandRegistry);
@@ -288,7 +293,8 @@ export class CodePromptApp {
       const tools = [
         ...this.fileTools.getTools(), 
         ...this.advancedTools.getTools(),
-        ...this.sandboxTools.getTools()
+        ...this.sandboxTools.getTools(),
+        ...this.dockerTools.getTools()
       ];
       const response = await this.llmClient.generateResponseWithHistory(this.conversationHistory, tools);
 
@@ -330,6 +336,7 @@ export class CodePromptApp {
           const advancedToolNames = this.advancedTools.getTools().map(t => t.name);
           const basicToolNames = this.fileTools.getTools().map(t => t.name);
           const sandboxToolNames = this.sandboxTools.getTools().map(t => t.name);
+          const dockerToolNames = this.dockerTools.getTools().map(t => t.name);
           
           if (advancedToolNames.includes(toolCall.name)) {
             result = await this.advancedTools.executeTool(toolCall.name, toolCall.parameters);
@@ -337,6 +344,8 @@ export class CodePromptApp {
             result = await this.fileTools.executeTool(toolCall.name, toolCall.parameters);
           } else if (sandboxToolNames.includes(toolCall.name)) {
             result = await this.sandboxTools.executeTool(toolCall.name, toolCall.parameters);
+          } else if (dockerToolNames.includes(toolCall.name)) {
+            result = await this.dockerTools.executeTool(toolCall.name, toolCall.parameters);
           } else {
             result = `Error: Unknown tool "${toolCall.name}"`;
           }
@@ -386,7 +395,8 @@ export class CodePromptApp {
       const tools = [
         ...this.fileTools.getTools(), 
         ...this.advancedTools.getTools(),
-        ...this.sandboxTools.getTools()
+        ...this.sandboxTools.getTools(),
+        ...this.dockerTools.getTools()
       ];
       const response = await this.llmClient.generateResponse(prompt, tools);
 
@@ -408,6 +418,7 @@ export class CodePromptApp {
           const advancedToolNames = this.advancedTools.getTools().map(t => t.name);
           const basicToolNames = this.fileTools.getTools().map(t => t.name);
           const sandboxToolNames = this.sandboxTools.getTools().map(t => t.name);
+          const dockerToolNames = this.dockerTools.getTools().map(t => t.name);
           
           if (advancedToolNames.includes(toolCall.name)) {
             result = await this.advancedTools.executeTool(toolCall.name, toolCall.parameters);
@@ -415,6 +426,8 @@ export class CodePromptApp {
             result = await this.fileTools.executeTool(toolCall.name, toolCall.parameters);
           } else if (sandboxToolNames.includes(toolCall.name)) {
             result = await this.sandboxTools.executeTool(toolCall.name, toolCall.parameters);
+          } else if (dockerToolNames.includes(toolCall.name)) {
+            result = await this.dockerTools.executeTool(toolCall.name, toolCall.parameters);
           } else {
             result = `Error: Unknown tool "${toolCall.name}"`;
           }
@@ -434,6 +447,7 @@ export class CodePromptApp {
     this.fileTools = new FileTools(directory);
     this.advancedTools = new AdvancedTools(directory);
     this.sandboxTools = new SandboxTools(directory);
+    this.dockerTools = new DockerTools(directory);
     this.config.workingDirectory = directory;
     this.initializeSandboxTools(); // Re-initialize sandbox tools with new directory
     console.log(chalk.blue(`📁 Working directory set to: ${directory}`));
