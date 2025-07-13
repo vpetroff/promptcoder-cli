@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import inquirer from 'inquirer';
 import { BaseCommand, CommandContext, CommandMetadata } from './base-command';
 
 export class DeployCommand extends BaseCommand {
@@ -36,7 +37,7 @@ export class DeployCommand extends BaseCommand {
 
   async execute(context: CommandContext): Promise<void> {
     if (!context.app.config.sandbox?.enabled || !context.app.config.sandbox.apiKey) {
-      console.log(chalk.red('🚫 Sandbox deployment not configured. Run /config to set up.'));
+      console.log(chalk.red('🚫 Sandbox deployment not configured. Run /sandbox init to set up.'));
       return;
     }
 
@@ -84,6 +85,7 @@ export class SandboxCommand extends BaseCommand {
     description: 'Manage sandbox deployments',
     usage: '/sandbox <action> [id]',
     examples: [
+      '/sandbox init',
       '/sandbox list',
       '/sandbox status abc123',
       '/sandbox delete abc123'
@@ -92,7 +94,7 @@ export class SandboxCommand extends BaseCommand {
 
   getCompletions(parts: string[], input: string): [string[], string] {
     if (parts.length === 2) {
-      const actions = ['list', 'status', 'delete'];
+      const actions = ['list', 'status', 'delete', 'init'];
       const partial = parts[1] || '';
       const matches = this.filterMatches(actions, partial);
       return [matches, partial];
@@ -101,13 +103,20 @@ export class SandboxCommand extends BaseCommand {
   }
 
   async execute(context: CommandContext): Promise<void> {
-    if (!context.app.config.sandbox?.enabled || !context.app.config.sandbox.apiKey) {
-      console.log(chalk.red('🚫 Sandbox deployment not configured. Run /config to set up.'));
+    this.validateArgs(context.args, 1);
+    const [action, id] = context.args;
+
+    // Handle init action without requiring existing config
+    if (action.toLowerCase() === 'init') {
+      await this.handleInit(context);
       return;
     }
 
-    this.validateArgs(context.args, 1);
-    const [action, id] = context.args;
+    // Other actions require configuration
+    if (!context.app.config.sandbox?.enabled || !context.app.config.sandbox.apiKey) {
+      console.log(chalk.red('🚫 Sandbox deployment not configured. Run /sandbox init to set up.'));
+      return;
+    }
 
     try {
       const { SandboxManager } = await import('../sandbox/sandbox-manager');
@@ -131,12 +140,94 @@ export class SandboxCommand extends BaseCommand {
           break;
         default:
           console.log(chalk.red(`❌ Unknown action: ${action}`));
-          console.log(chalk.gray('Available actions: list, status, delete'));
+          console.log(chalk.gray('Available actions: list, status, delete, init'));
       }
     } catch (error) {
       console.log(chalk.red('❌ Sandbox command failed:'));
       console.log(chalk.red(error instanceof Error ? error.message : String(error)));
     }
+  }
+
+  private async handleInit(context: CommandContext): Promise<void> {
+    console.log(chalk.blue.bold('🚀 Sandbox Initialization'));
+    console.log(chalk.gray('Initialize sandbox deployment for your project\n'));
+
+    // Show current configuration if exists
+    if (context.app.config.sandbox?.enabled) {
+      console.log(chalk.blue('Current configuration:'));
+      console.log(chalk.gray(`Provider: ${context.app.config.sandbox.provider || 'e2b'}`));
+      console.log(chalk.gray(`API Key: ${context.app.config.sandbox.apiKey ? '***hidden***' : 'Not set'}`));
+      console.log(chalk.gray(`Enabled: ${context.app.config.sandbox.enabled ? 'Yes' : 'No'}\n`));
+    }
+
+    try {
+      const answers = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'provider',
+          message: 'Select sandbox provider:',
+          choices: [
+            { name: 'E2B (Recommended)', value: 'e2b' },
+            { name: 'Other (Future support)', value: 'other', disabled: true }
+          ],
+          default: context.app.config.sandbox?.provider || 'e2b'
+        },
+        {
+          type: 'input',
+          name: 'apiKey',
+          message: 'Enter your E2B API key:',
+          validate: (input: string) => {
+            if (!input.trim()) {
+              return 'API key is required';
+            }
+            if (input.length < 10) {
+              return 'API key seems too short. Please check your key.';
+            }
+            return true;
+          },
+          when: (answers) => answers.provider === 'e2b'
+        },
+        {
+          type: 'confirm',
+          name: 'enabled',
+          message: 'Enable sandbox deployment features?',
+          default: true
+        }
+      ]);
+
+      // Update app config
+      if (!context.app.config.sandbox) {
+        context.app.config.sandbox = {};
+      }
+      
+      context.app.config.sandbox.provider = answers.provider;
+      context.app.config.sandbox.apiKey = answers.apiKey;
+      context.app.config.sandbox.enabled = answers.enabled;
+
+      // Save to config file
+      await this.saveConfigToFile(context.app.config);
+
+      // Re-initialize sandbox tools with new config
+      context.app.initializeSandboxTools();
+
+      console.log(chalk.green('\n✅ Sandbox initialization completed successfully!'));
+      
+      if (answers.enabled) {
+        console.log(chalk.blue('\n💡 You can now use:'));
+        console.log(chalk.gray('  /deploy - Deploy your project to a sandbox'));
+        console.log(chalk.gray('  /sandbox list - List your active sandboxes'));
+        console.log(chalk.gray('  /watch <sandbox-id> - Watch files and auto-sync'));
+      }
+
+    } catch (error) {
+      console.log(chalk.red('\n❌ Initialization failed:'));
+      console.log(chalk.red(error instanceof Error ? error.message : String(error)));
+    }
+  }
+
+  private async saveConfigToFile(config: any): Promise<void> {
+    const { saveAppConfig } = await import('../config');
+    await saveAppConfig(config);
   }
 
   private async handleList(manager: any): Promise<void> {
@@ -208,7 +299,7 @@ export class WatchCommand extends BaseCommand {
 
   async execute(context: CommandContext): Promise<void> {
     if (!context.app.config.sandbox?.enabled || !context.app.config.sandbox.apiKey) {
-      console.log(chalk.red('🚫 Sandbox deployment not configured. Run /config to set up.'));
+      console.log(chalk.red('🚫 Sandbox deployment not configured. Run /sandbox init to set up.'));
       return;
     }
 

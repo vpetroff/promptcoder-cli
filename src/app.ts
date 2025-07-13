@@ -48,7 +48,7 @@ export class CodePromptApp {
     this.setupGracefulExit();
   }
 
-  private initializeSandboxTools(): void {
+  public initializeSandboxTools(): void {
     if (this.config.sandbox?.enabled && this.config.sandbox.provider && this.config.sandbox.apiKey) {
       this.sandboxTools.setSandboxConfig(this.config.sandbox.provider, {
         apiKey: this.config.sandbox.apiKey
@@ -120,6 +120,7 @@ export class CodePromptApp {
     console.log(chalk.gray('Commands: /exit, /clear, /save, /load, /list, /rename, /delete'));
     console.log(chalk.gray('CLI Commands: /deploy, /sandbox, /watch, /stop (use /help for full list)'));
     console.log(chalk.gray('💡 Type "/" and press Tab for command autocomplete'));
+    console.log(chalk.gray('⚙️  Run /sandbox init to set up deployments'));
     console.log(chalk.gray('Press Ctrl+C to exit\n'));
 
     // Show current conversation info

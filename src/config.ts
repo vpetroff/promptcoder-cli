@@ -192,3 +192,40 @@ async function saveConfig(provider: 'openai' | 'anthropic', apiKey: string, mode
     console.log(chalk.red('❌ Error saving config:'), error);
   }
 }
+
+export async function saveAppConfig(appConfig: AppConfig): Promise<void> {
+  try {
+    await fs.ensureDir(CONFIG_DIR);
+    
+    let storedConfig: StoredConfig = { defaultProvider: appConfig.provider };
+    
+    // Load existing config if it exists
+    if (await fs.pathExists(CONFIG_FILE)) {
+      storedConfig = await fs.readJson(CONFIG_FILE);
+    }
+
+    // Update stored config with app config values
+    storedConfig.defaultProvider = appConfig.provider;
+    
+    if (appConfig.provider === 'openai') {
+      storedConfig.openaiApiKey = appConfig.apiKey;
+      storedConfig.defaultModel = { ...storedConfig.defaultModel, openai: appConfig.model };
+    } else {
+      storedConfig.anthropicApiKey = appConfig.apiKey;
+      storedConfig.defaultModel = { ...storedConfig.defaultModel, anthropic: appConfig.model };
+    }
+    
+    // Update sandbox config if provided
+    if (appConfig.sandbox) {
+      storedConfig.sandbox = {
+        provider: appConfig.sandbox.provider,
+        apiKey: appConfig.sandbox.apiKey,
+        enabled: appConfig.sandbox.enabled
+      };
+    }
+
+    await fs.writeJson(CONFIG_FILE, storedConfig, { spaces: 2 });
+  } catch (error) {
+    throw new Error(`Failed to save configuration: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
